@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.0.14/src/index.js"></script>
     <title>Phân Tích Dữ Liệu Môi Trường</title>
     <style>
         body {
@@ -65,200 +66,146 @@
     </style>
 </head>
 <body>
-    <script src="https://www.unpkg.com/@eohjsc/era-widget@1.0.14/src/index.js"></script>
-    <input type="checkbox" id="EC">
-    <input type="checkbox" id="TDS">
-    <input type="checkbox" id="DO">
-    <input type="checkbox" id="T°">
-    <input type="checkbox" id="PH">  
+    <!-- Checkbox để hiển thị trạng thái từ IoT platform -->
+    <input type="checkbox" id="ecCheckbox" style="display:none;">
+    <input type="checkbox" id="tdsCheckbox" style="display:none;">
+    <input type="checkbox" id="doCheckbox" style="display:none;">
+    <input type="checkbox" id="temperatureCheckbox" style="display:none;">
+    <input type="checkbox" id="phCheckbox" style="display:none;">
+
     <script>
-       const eraWidget = new EraWidget();
-       let config = null;
-       let ECvalue = 0;
-       let TDSvalue = 0;
-       let DOvalue = 0;
-       let Tvalue = 0;
-       let PHvalue = 0;             
-       eraWidget.onConfiguration((configuration) => {
-         config = configuration.realtime_configs[0];
-       });
-     
-       eraWidget.onValues((values) => {
-         const inputEC = document.getElementById('EC');
-         ECvalue = values[config.id].value;
-         inputEC.checked = values[config.id].value >0;
-   
-         const inputTDS = document.getElementById('TDS');
-         TDSvalue = values[config.id].value;
-         inputTDS.checked = values[config.id].value >0;
-   
-         const inputDO = document.getElementById('DO');
-         DOvalue = values[config.id].value;
-         inputDO.checked = values[config.id].value >0;
-   
-         const inputT = document.getElementById('T°');
-         Tvalue = values[config.id].value;
-         inputT.checked = values[config.id].value >0;      
-   
-         const inputPH = document.getElementById('PH');
-         PHvalue = values[config.id].value;
-         inputPH.checked = values[config.id].value >0;      
-       });
-     
-       eraWidget.ready();
-     </script>
-<div class="container" id="input-container">
-    <h1>Nhập Dữ Liệu Môi Trường</h1>
-    <form id="dataForm">
-        <div class="form-group">
-            <label for="tds">TDS (mg/L):</label>
-            <input type="number" id="tds" step="0.01" required>  
-        </div>
-        <div class="form-group">
-            <label for="ec">EC (µS/cm):</label>
-            <input type="number" id="ec" step="0.01" required> 
-        </div>
-        <div class="form-group">
-            <label for="to">Oxy (mg/L):</label>
-            <input type="number" id="to" step="0.01" required> 
-        </div>
-        <div class="form-group">
-            <label for="temperature">Nhiệt độ (°C):</label>
-            <input type="number" id="temperature" step="0.01" required> 
-        </div>
-        <div class="form-group">
-            <label for="ph">pH:</label>
-            <input type="number" id="ph" step="0.01" required> 
-        </div>
-        
-        <div class="form-group">
-            <label for="waterColor">Chọn màu nước:</label>
-            <select id="waterColor">
-                <option value="">--Chọn màu nước--</option>
-                <option value="nâu trà">Nâu trà</option>
-                <option value="xanh nhạt">Xanh nhạt</option>
-                <option value="xanh đậm">Xanh đậm</option>
-                <option value="vàng cam">Vàng cam</option>
-                <option value="đỏ gạch">Đỏ gạch</option>
-                <option value="đen">Đen</option>
-                <option value="trắng đục">Trắng đục</option>
-                <option value="trong">Trong</option>
-            </select>
-        </div>
-        <script>
-            document.getElementById('ec').value = ECvalue;
-            document.getElementById('tds').value = TDSvalue;
-            document.getElementById('to').value = DOvalue;   
-            document.getElementById('temperature').value = Tvalue;   
-            document.getElementById('ph').value = PHvalue; 
-        </script>
-        <button type="button" onclick="analyzeData()">Phân tích dữ liệu</button>
-    </form>
-</div>
+        const eraWidget = new EraWidget();
+        let configEc = null;
+        let configTds = null;
+        let configDo = null;
+        let configT = null;
+        let configPh = null;
 
-<div id="results">
-    <h1>Kết quả phân tích</h1>
-    <div id="summary"></div>
-    <button onclick="goBack()">Quay lại</button>
-</div>
+        eraWidget.onConfiguration((configuration) => {
+            configEc = configuration.realtime_configs.find(config => config.name === 'EC');
+            configTds = configuration.realtime_configs.find(config => config.name === 'TDS');
+            configDo = configuration.realtime_configs.find(config => config.name === 'DO');
+            configT = configuration.realtime_configs.find(config => config.name === 'TEMP');
+            configPh = configuration.realtime_configs.find(config => config.name === 'PH');
+        });
 
-<script>
-    function analyzeData() {
-        const tds = parseFloat(document.getElementById('tds').value);
-        const ec = parseFloat(document.getElementById('ec').value);
-        const to = parseFloat(document.getElementById('to').value);
-        const temperature = parseFloat(document.getElementById('temperature').value);
-        const ph = parseFloat(document.getElementById('ph').value);
-        const waterColor = document.getElementById('waterColor').value;
+        eraWidget.onValues((values) => {
+            if (configEc && values[configEc.id]) {
+                const ecValue = values[configEc.id].value;
+                document.getElementById('ecCheckbox').checked = ecValue > 0;
+                document.getElementById('ec').value = ecValue;
+            }
 
-        let summary = '';
-        let colorClass = 'ideal';
-        let icon = '&#9989;';
-        if (tds > 1000) {
-            summary += "<p>TDS cao: Có thể cần kiểm tra thêm về độ chất rắn hòa tan trong nước.</p>";
-            colorClass = 'warning';
-            icon = '&#9888;';
-        }
-        if (ec > 2000) {
-            summary += "<p>EC cao: Có thể có quá nhiều muối trong nước.</p>";
-            colorClass = 'warning';
-            icon = '&#9888;';
-        }
-        if (to < 5) {
-            summary += "<p>Thiếu oxy: Có thể cần thêm oxy vào nước.</p>";
-            colorClass = 'danger';
-            icon = '&#9888;';
-        }
-        if (temperature < 20 || temperature > 30) {
-            summary += "<p>Nhiệt độ không phù hợp: Kiểm tra và điều chỉnh nhiệt độ.</p>";
-            colorClass = 'warning';
-            icon = '&#9888;';
-        }
-        if (ph < 6.5 || ph > 8.5) {
-            summary += "<p>pH không trong khoảng lý tưởng: Điều chỉnh pH của nước.</p>";
-            colorClass = 'warning';
-            icon = '&#9888;';
+            if (configTds && values[configTds.id]) {
+                const tdsValue = values[configTds.id].value;
+                document.getElementById('tdsCheckbox').checked = tdsValue > 0;
+                document.getElementById('tds').value = tdsValue;
+            }
+
+            if (configDo && values[configDo.id]) {
+                const doValue = values[configDo.id].value;
+                document.getElementById('doCheckbox').checked = doValue > 0;
+                document.getElementById('do').value = doValue;
+            }
+
+            if (configT && values[configT.id]) {
+                const tValue = values[configT.id].value;
+                document.getElementById('temperatureCheckbox').checked = tValue > 0;
+                document.getElementById('temperature').value = tValue;
+            }
+
+            if (configPh && values[configPh.id]) {
+                const phValue = values[configPh.id].value;
+                document.getElementById('phCheckbox').checked = phValue > 0;
+                document.getElementById('ph').value = phValue;
+            }
+        });
+
+        eraWidget.ready();
+    </script>
+
+    <div class="container" id="inputContainer">
+        <h1>Nhập Dữ Liệu Môi Trường</h1>
+        <form id="dataForm">
+            <div class="form-group">
+                <label for="tds">TDS (mg/L):</label>
+                <input type="number" id="tds" step="0.01" required value="0">  
+            </div>
+            <div class="form-group">
+                <label for="ec">EC (µS/cm):</label>
+                <input type="number" id="ec" step="0.01" required value="0"> 
+            </div>
+            <div class="form-group">
+                <label for="do">Oxy (mg/L):</label>
+                <input type="number" id="do" step="0.01" required value="0"> 
+            </div>
+            <div class="form-group">
+                <label for="temperature">Nhiệt độ (°C):</label>
+                <input type="number" id="temperature" step="0.01" required value="0"> 
+            </div>
+            <div class="form-group">
+                <label for="ph">pH:</label>
+                <input type="number" id="ph" step="0.01" required value="0"> 
+            </div>
+            
+            <div class="form-group">
+                <label for="waterColor">Chọn màu nước:</label>
+                <select id="waterColor">
+                    <option value="">--Chọn màu nước--</option>
+                    <option value="nâu trà">Nâu trà</option>
+                    <option value="xanh nhạt">Xanh nhạt</option>
+                    <option value="xanh đậm">Xanh đậm</option>
+                    <option value="vàng cam">Vàng cam</option>
+                    <option value="đỏ gạch">Đỏ gạch</option>
+                    <option value="đen">Đen</option>
+                    <option value="trắng đục">Trắng đục</option>
+                    <option value="trong">Trong</option>
+                </select>
+            </div>
+            <button type="button" onclick="analyzeData()">Phân tích dữ liệu</button>
+        </form>
+    </div>
+
+    <div id="results">
+        <h1>Kết quả phân tích</h1>
+        <div id="summary"></div>
+        <button onclick="goBack()">Quay lại</button>
+    </div>
+
+    <script>
+        function analyzeData() {
+            const tds = parseFloat(document.getElementById('tds').value);
+            const ec = parseFloat(document.getElementById('ec').value);
+            const doValue = parseFloat(document.getElementById('do').value);
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            const ph = parseFloat(document.getElementById('ph').value);
+            const waterColor = document.getElementById('waterColor').value;
+
+            let summary = '';
+            let colorClass = 'ideal';
+            let icon = '&#9989;';
+            if (tds > 1000 || ec > 2000 || doValue < 4 || temperature < 10 || temperature > 35 || ph < 6 || ph > 8) {
+                colorClass = 'danger';
+                icon = '&#10060;';
+                summary = 'Tình trạng nước rất nguy hiểm!';
+            } else if (tds > 500 || ec > 1000 || doValue < 5 || temperature < 15 || temperature > 30 || ph < 6.5 || ph > 7.5) {
+                colorClass = 'warning';
+                icon = '&#9888;';
+                summary = 'Tình trạng nước cảnh báo cần kiểm tra thêm.';
+            } else {
+                summary = 'Tình trạng nước lý tưởng!';
+            }
+            summary += `<br>Màu nước: ${waterColor}`;
+
+            document.getElementById('inputContainer').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('summary').innerHTML = `<div class="icon ${colorClass}">${icon}</div><div class="${colorClass}">${summary}</div>`;
         }
 
-        // Phân tích màu nước
-        switch (waterColor) {
-            case "nâu trà":
-                summary += "<p>Màu nước nâu trà: Nước lý tưởng cho tôm nuôi.</p>";
-                colorClass = "ideal";
-                icon = "&#9989;";
-                break;
-            case "xanh nhạt":
-                summary += "<p>Màu nước xanh nhạt: Tốt cho tôm, có tảo tốt cung cấp oxy.</p>";
-                colorClass = "ideal";
-                icon = "&#9989;";
-                break;
-            case "xanh đậm":
-                summary += "<p>Màu nước xanh đậm: Có thể có vi khuẩn lam, cần kiểm tra mức oxy và chất độc.</p>";
-                colorClass = "warning";
-                icon = "&#9888;";
-                break;
-            case "vàng cam":
-                summary += "<p>Màu nước vàng cam: Do đất phèn, cần kiểm tra chất lượng nước.</p>";
-                colorClass = "warning";
-                icon = "&#9888;";
-                break;
-            case "đỏ gạch":
-                summary += "<p>Màu nước đỏ gạch: Có thể do xói mòn đất, kiểm tra nguồn nước đầu vào.</p>";
-                colorClass = "warning";
-                icon = "&#9888;";
-                break;
-            case "đen":
-                summary += "<p>Màu nước đen: Có dấu hiệu ô nhiễm nặng, cần xử lý ngay.</p>";
-                colorClass = "danger";
-                icon = "&#9888;";
-                break;
-            case "trắng đục":
-                summary += "<p>Màu nước trắng đục: Có thể do vi sinh vật phát triển quá mức, cần kiểm tra chất lượng nước.</p>";
-                colorClass = "warning";
-                icon = "&#9888;";
-                break;
-            case "trong":
-                summary += "<p>Màu nước trong: Có thể do thiếu dinh dưỡng hoặc sinh vật, cần kiểm tra thêm.</p>";
-                colorClass = "warning";
-                icon = "&#9888;";
-                break;
-            default:
-                summary += "<p>Chưa có thông tin về màu nước.</p>";
-                colorClass = "ideal";
-                icon = "&#9989;";
-                break;
+        function goBack() {
+            document.getElementById('inputContainer').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
         }
-        document.getElementById('input-container').style.display = 'none';
-        document.getElementById('results').style.display = 'block';
-        const summaryDiv = document.getElementById('summary');
-        summaryDiv.innerHTML = `<div class="icon ${colorClass}">${icon}</div>${summary}`;
-    }
-
-    function goBack() {
-        document.getElementById('results').style.display = 'none';
-        document.getElementById('input-container').style.display = 'block';
-    }
-</script>
-
+    </script>
 </body>
 </html>
