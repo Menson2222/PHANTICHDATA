@@ -135,7 +135,7 @@
                 <input type="number" id="tds" step="1" required value="0">  
             </div>
             <div class="form-group">
-                <label for="ec">EC (µS/cm):</label>
+                <label for="ec">EC (mS/cm):</label>
                 <input type="number" id="ec" step="1" required value="0"> 
             </div>
             <div class="form-group">
@@ -206,19 +206,19 @@
             }
 
 //EC
-            if (ec < 500) {
+            if (ec < 0.5) {
                 summary += "<p class='danger'><strong>Nồng độ EC rất thấp:</strong> nước thiếu ion và khoáng chất!!!</p>";
             }
-            if (500 <= ec && ec< 1000) {
+            if (0.5 <= ec && ec< 1) {
                 summary += "<p class='warning'><strong>Nồng độ EC khá thấp:</strong> cần điều chỉnh kịp thời!!</p>";
             }
-            if (1000 <= ec && ec <= 3000) {
+            if (1 <= ec && ec <= 3) {
                 summary += "<p class='ideal'><strong>Độ dẫn điện (EC) chuẩn!</strong></p>";
             }
-            if (3000 < ec && ec <= 4500) {
+            if (3 < ec && ec <= 4.5) {
                 summary += "<p class='warning'><strong>Nồng độ EC khá cao:</strong>Tôm sẽ stress và giảm sức đề kháng!!</p>";
             }
-            if (ec > 4500) {
+            if (ec > 4.5) {
                 summary += "<p class='danger'><strong>Nồng độ EC rất cao:</strong> Tôm sẽ bị sốc và chết!!!</p>";
             }
 
